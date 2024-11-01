@@ -2,5 +2,6 @@ requests
 lxml
 beautifulsoup4
 torch
-transformers
+transformers==3.0.0
 openai
+flask

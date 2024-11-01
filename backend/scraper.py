@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 from typing import List
-from transformers import pipeline
+import re
 
 def get_content(url: str) -> List[str]:
     response = requests.get(url)
@@ -14,32 +14,33 @@ def get_content(url: str) -> List[str]:
 
         soup = BeautifulSoup(html, 'lxml')
         paragraphs = soup.find_all('p')
+        content = []
 
-        # Check if the html contains any <p> tags
-        if not paragraphs:
-            raise Exception('Error: No <p> tags found')
-        else:
-            content = []
-            for p in paragraphs:
-                content.append(p.text)
-            return content
+        for p in paragraphs:
+            content.append(p.get_text())
+
+        return content
         
     # Handling for other status codes which indicate a connection error
     else:
         raise Exception('Error: {}'.format(status))
 
 
-def clean_content(content: List[str]) -> List[str]:
-    return
+def clean_content(text: str) -> str:
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    
+    # Remove special characters from each line using regex
+    cleaned_lines = [re.sub(r'[^A-Za-z0-9\s.,!?]', '', line) for line in lines]
+    
+    # Join cleaned lines back into a single text
+    cleaned_text = '\n'.join(cleaned_lines)
+    return cleaned_text
 
-if __name__ == '__main__':
-    qa_pipeline = pipeline("question-answering", model="distilbert-base-cased-distilled-squad")
-    context = """The Nobel Prize week has come and gone, once again reigniting the debate about why so many recipients of this prestigious award are male.
+content = get_content("https://www.businesswire.com/news/home/20241031423444/en/Other-World-Computing-OWC-Helps-Power-the-Future-for-Apple-Users-with-Thunderbolt-5-Solutions-for-New-Mac-Mini-and-MacBook-Pro-with-M4/")
+# content = clean_content(content)
 
-This year, only one Nobel Prize went to a woman — Han Kang, the South Korean author who won the Nobel Prize in Literature for her book The Vegetarian. Meanwhile, all the other prizes — including in the sciences — were awarded to men. But that doesn’t mean women’s research efforts didn’t play a role in the discoveries that earned those men their trophies.
+print("-------------------------")
 
-Some people were quick to observe that the work of American biologists Gary Ruvkun and Victor Ambros, who received this year’s Nobel Prize in Medicine for their discovery of microRNAs and their role in gene regulation — an insight that could help combat cancer — was made possible by a string of papers, many of which list Rosalind Lee, Ambros’s wife, as an author. The Nobel Committee even recognised Lee’s contribution on social media, but it apparently wasn’t enough to merit awarding her the prize as well. (And in case you’re wondering, Nobel rules allow for up to three people to be recognised, so that certainly wasn’t the issue.)"""
-    question = "List 10 typesof audience would be interested in this context?"
-    result = qa_pipeline(question=question, context=context)
-
-    print(result['answer'])
+for line in content:
+    line = clean_content(line)
+    print(line)
